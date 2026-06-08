@@ -42,10 +42,18 @@ def _add_nvidia_dll_dirs() -> None:
                 pass
 
 
-def record_until_silence(cfg: dict):
-    """Записывает аудио с микрофона, пока не наступит тишина. Возвращает np.ndarray float32 mono."""
+def record_until_silence(cfg: dict, on_block=None):
+    """Записывает аудио с микрофона, пока не наступит тишина. Возвращает np.ndarray float32 mono.
+
+    on_block(mono) — необязательный колбэк на каждый блок (для VU-метра в UI).
+    Устройство ввода и усиление берутся из cfg['audio'].
+    """
     import numpy as np
     import sounddevice as sd
+
+    from src.audio import apply_gain, get_audio_cfg
+
+    in_dev, _out, in_gain, _og = get_audio_cfg(cfg)
 
     tcfg = cfg.get("trigger", {})
     silence_s = float(tcfg.get("silence_seconds", 1.2))
@@ -58,11 +66,13 @@ def record_until_silence(cfg: dict):
     max_blocks = int(max_s / 0.1)
 
     with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="float32",
-                        blocksize=block) as stream:
+                        blocksize=block, device=in_dev) as stream:
         for _ in range(max_blocks):
             data, _overflow = stream.read(block)
-            mono = data[:, 0]
+            mono = apply_gain(data[:, 0], in_gain)
             frames.append(mono)
+            if on_block is not None:
+                on_block(mono)
             energy = float(np.sqrt(np.mean(mono ** 2)))
             if energy > threshold:
                 started, silent_blocks = True, 0
@@ -116,6 +126,7 @@ class TTS:
 
     def __init__(self, cfg: dict):
         self.cfg = cfg["tts"]
+        self.audio = cfg.get("audio", {})
         self.engine_name = self.cfg.get("engine", "edge")
         self._pyttsx = None
         if self.engine_name == "pyttsx3":
@@ -138,12 +149,12 @@ class TTS:
         if voice:
             self._pyttsx.setProperty("voice", voice)
 
-    def say(self, text: str) -> None:
+    def say(self, text: str, on_level=None) -> None:
         if not text:
             return
         if self.engine_name == "edge":
             try:
-                self._say_edge(text)
+                self._say_edge(text, on_level=on_level)
                 return
             except Exception as e:  # noqa: BLE001 — нет интернета и т.п.
                 print(f"[TTS] edge не сработал ({e}); падаю на системный голос.")
@@ -154,14 +165,15 @@ class TTS:
         self._pyttsx.say(text)
         self._pyttsx.runAndWait()
 
-    def _say_edge(self, text: str) -> None:
+    def _say_edge(self, text: str, on_level=None) -> None:
         import asyncio
         import os
         import tempfile
 
         import edge_tts
         import soundfile as sf
-        import sounddevice as sd
+
+        from src.audio import play
 
         path = os.path.join(tempfile.gettempdir(), "assistant_tts.mp3")
 
@@ -170,8 +182,9 @@ class TTS:
 
         asyncio.run(_gen())
         data, sr = sf.read(path, dtype="float32")
-        sd.play(data, sr)
-        sd.wait()
+        out_dev = self.audio.get("output_device")
+        out_gain = float(self.audio.get("output_gain", 1.0))
+        play(data, sr, device=out_dev, gain=out_gain, on_level=on_level)
 
 
 def beep(freq: int = 880, ms: int = 150) -> None:
@@ -209,6 +222,7 @@ class WakeListener:
         from vosk import KaldiRecognizer, Model, SetLogLevel
 
         SetLogLevel(-1)  # убрать шумные логи Vosk
+        self.cfg = cfg
         wc = cfg["trigger"]["wakeword"]
         model_path = wc["model"]
         if not os.path.isdir(os.path.join(model_path, "am")):
@@ -247,19 +261,37 @@ class WakeListener:
                     return True
         return False
 
-    def wait(self) -> bool:
+    def wait(self, on_block=None, should_stop=None, ptt=None) -> bool:
+        """Слушает фразу активации.
+
+        on_block(mono)  — колбэк уровня для VU-метра (UI слышит микрофон и в простое).
+        should_stop()   — если вернёт True, выходим с False (движок остановлен).
+        ptt             — threading.Event: если выставлен, считаем за активацию (ручной захват).
+        Устройство ввода и усиление берутся из self.cfg['audio'].
+        """
         import json
 
         import numpy as np
         import sounddevice as sd
 
+        from src.audio import apply_gain, get_audio_cfg
+
+        in_dev, _out, in_gain, _og = get_audio_cfg(self.cfg)
         rec = self._Rec(self.model, self.rate)
-        block = int(self.rate * 0.25)
+        block = int(self.rate * 0.1)
         with sd.InputStream(samplerate=self.rate, channels=1,
-                            dtype="float32", blocksize=block) as stream:
+                            dtype="float32", blocksize=block, device=in_dev) as stream:
             while True:
+                if should_stop is not None and should_stop():
+                    return False
+                if ptt is not None and ptt.is_set():
+                    ptt.clear()
+                    return True
                 data, _ = stream.read(block)
-                pcm = (np.clip(data[:, 0], -1, 1) * 32767).astype(np.int16).tobytes()
+                mono = apply_gain(data[:, 0], in_gain)
+                if on_block is not None:
+                    on_block(mono)
+                pcm = (np.clip(mono, -1, 1) * 32767).astype(np.int16).tobytes()
                 if rec.AcceptWaveform(pcm):
                     if self._match(json.loads(rec.Result()).get("text", "")):
                         return True

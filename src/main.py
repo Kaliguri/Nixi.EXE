@@ -37,52 +37,53 @@ def text_loop(router: Router) -> None:
         print(f"{router.name}> {reply}\n")
 
 
-def voice_loop(router: Router, cfg: dict) -> None:
-    from src.voice import make_trigger, beep, STT, TTS, ModelNotReady, record_until_silence
+def voice_loop(cfg: dict) -> None:
+    """Консольный голосовой режим поверх AssistantEngine (печатает события)."""
+    import time
 
-    print(f"=== {router.name}: голосовой режим ===")
-    print("Загружаю модели...")
-    try:
-        trigger = make_trigger(cfg)
-        stt = STT(cfg)
-    except ModelNotReady as e:
-        print(f"\n[!] Голосовой режим недоступен: модель не готова.\n{e}\n"
-              "Пока можешь пользоваться текстовым режимом:  .\\run.ps1")
-        return
-    except Exception as e:  # noqa: BLE001
-        print(f"\n[!] Не удалось запустить голосовой режим: {e}\n"
-              "Проверь модель/конфиг. Текстовый режим работает:  .\\run.ps1")
-        return
-    tts = TTS(cfg)
-    print("Готово.")
+    from src.engine import AssistantEngine
+
+    name = cfg["assistant"]["name"]
+    print(f"=== {name}: голосовой режим ===")
+
+    def on_event(evt: dict) -> None:
+        t = evt.get("type")
+        if t == "status":
+            state = evt["state"]
+            if state == "loading":
+                print("Загружаю модели...")
+            elif state == "listening":
+                print("Слушаю...")
+        elif t == "transcript":
+            role = evt.get("role")
+            if role == "user":
+                print(f"Ты(голос)> {evt['text']}")
+            elif role == "assistant":
+                print(f"{name}> {evt['text']}\n")
+            elif role == "system":
+                print(evt["text"])
+        elif t == "error":
+            print(f"[!] {evt['message']}")
+
+    engine = AssistantEngine(cfg, on_event=on_event)
+    engine.start()
 
     mode = cfg.get("trigger", {}).get("mode", "push_to_talk")
-    if mode == "wakeword":
-        phrase = cfg["trigger"]["wakeword"]["phrases"][0]
-        print(f"Слушаю фразу активации: «{phrase}» (Ctrl+C — выход)")
-    tts.say(f"Привет! Я {router.name}.")
-
     try:
-        while True:
-            if not trigger.wait():
-                break
-            if cfg.get("trigger", {}).get("beep", True):
-                beep()
-            print("Слушаю команду...")
-            audio = record_until_silence(cfg)
-            text = stt.transcribe(audio)
-            if not text:
-                print("(не расслышал)")
-                continue
-            print(f"Ты(голос)> {text}")
-            try:
-                reply = router.handle(text)
-            except Exception as e:  # noqa: BLE001
-                reply = f"Произошла ошибка: {e}"
-            print(f"{router.name}> {reply}\n")
-            tts.say(reply)
+        if mode == "push_to_talk":
+            while engine.state not in ("stopped", "error"):
+                try:
+                    input("\n[Enter — говорить, Ctrl+C — выход] ")
+                except EOFError:
+                    break
+                engine.push_to_talk()
+        else:
+            while engine.state not in ("stopped", "error"):
+                time.sleep(0.2)
     except KeyboardInterrupt:
         print("\nВыход.")
+    finally:
+        engine.stop()
 
 
 def main() -> None:
@@ -93,12 +94,12 @@ def main() -> None:
     args = ap.parse_args()
 
     cfg = load_config(args.config)
-    skills = load_skills(cfg)
-    router = Router(cfg, skills)
 
     if args.voice:
-        voice_loop(router, cfg)
+        voice_loop(cfg)
     else:
+        skills = load_skills(cfg)
+        router = Router(cfg, skills)
         text_loop(router)
 
 

@@ -23,3 +23,10 @@ audio_cache/
 Thumbs.db
 .idea/
 .vscode/
+
+# Node (на всякий случай; вложенный apps/web/.gitignore тоже покрывает)
+node_modules/
+dist/
+
+# Локальные настройки Claude Code (личные, не для репозитория)
+.claude/settings.local.json

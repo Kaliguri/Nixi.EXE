@@ -1,0 +1,53 @@
+import { useEffect, useState } from 'react';
+import { Button, Select } from '@/shared/ui';
+import { useSaveSettings, useSettings } from '@/shared/api';
+
+export function LlmSettings() {
+  const { data } = useSettings();
+  const save = useSaveSettings();
+  const [defaultModel, setDefaultModel] = useState('');
+  const [models, setModels] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!data) return;
+    setDefaultModel(data.assistant.default_model);
+    setModels(Object.fromEntries(Object.entries(data.models).map(([k, v]) => [k, v.model ?? ''])));
+  }, [data]);
+
+  if (!data) return <p className="text-sm text-zinc-500">Загрузка…</p>;
+
+  const keys = Object.keys(data.models);
+
+  const onSave = () =>
+    save.mutate({
+      assistant: { default_model: defaultModel },
+      models: Object.fromEntries(keys.map((k) => [k, { model: models[k] }])),
+    });
+
+  return (
+    <div className="max-w-md space-y-4">
+      <Select
+        label="Активная нейросеть по умолчанию"
+        value={defaultModel}
+        onValueChange={setDefaultModel}
+        options={keys.map((k) => ({
+          value: k,
+          label: `${k.toUpperCase()} (${data.models[k].provider})`,
+        }))}
+      />
+      {keys.map((k) => (
+        <label key={k} className="block">
+          <span className="mb-1 block text-xs text-zinc-400">Модель {k.toUpperCase()}</span>
+          <input
+            value={models[k] ?? ''}
+            onChange={(e) => setModels((m) => ({ ...m, [k]: e.target.value }))}
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none"
+          />
+        </label>
+      ))}
+      <Button onClick={onSave} disabled={save.isPending}>
+        {save.isPending ? 'Сохраняю…' : 'Сохранить'}
+      </Button>
+    </div>
+  );
+}
