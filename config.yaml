@@ -34,10 +34,19 @@ tts:
 
 # Активация записи в голосовом режиме
 trigger:
-  mode: push_to_talk       # push_to_talk (жми Enter) | wakeword
-  wakeword: "hey_jarvis"   # для режима wakeword (openWakeWord)
-  silence_seconds: 1.2     # сколько тишины = конец фразы
-  max_seconds: 15          # максимум длины записи
+  mode: wakeword           # wakeword (всегда слушает фразу) | push_to_talk (жми Enter)
+  silence_seconds: 1.2     # сколько тишины = конец команды
+  max_seconds: 15          # максимум длины записи команды
+  beep: true               # короткий сигнал после активации
+  wakeword:
+    model: models/vosk-model-small-ru   # модель Vosk (download_wake_model.py)
+    phrases:               # варианты, как Vosk может расслышать фразу активации
+      - "арс меджика"      # (откалибруй под свой голос: wake_calibrate live)
+      - "архимед джека"    # так Vosk расслышал синтез — стартовый вариант
+      - "арс мэджик"
+      - "арс меджик"
+      - "арс маги ка"
+    fuzzy: 0.7             # порог нечёткого совпадения 0..1 (ниже = чувствительнее)
 
 skills:
   enabled: true

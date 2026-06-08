@@ -174,16 +174,21 @@ class TTS:
         sd.wait()
 
 
-class Trigger:
-    """Активация записи. push_to_talk: жди Enter. (wakeword — TODO)"""
+def beep(freq: int = 880, ms: int = 150) -> None:
+    """Короткий сигнал «слушаю» (Windows)."""
+    try:
+        import winsound
+
+        winsound.Beep(freq, ms)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+class PushToTalk:
+    """Активация по нажатию Enter."""
 
     def __init__(self, cfg: dict):
-        self.mode = cfg.get("trigger", {}).get("mode", "push_to_talk")
-        if self.mode != "push_to_talk":
-            raise NotImplementedError(
-                "Пока поддержан только trigger.mode=push_to_talk. "
-                "Wake word (openWakeWord) добавим следующим шагом."
-            )
+        pass
 
     def wait(self) -> bool:
         try:
@@ -191,3 +196,70 @@ class Trigger:
             return True
         except (EOFError, KeyboardInterrupt):
             return False
+
+
+class WakeListener:
+    """«Дежурное» прослушивание фразы активации через Vosk (всегда слушает).
+
+    Использует нечёткое совпадение, т.к. редкая/иностранная фраза распознаётся
+    нестабильно. Варианты фраз и порог — в config.yaml (trigger.wakeword).
+    """
+
+    def __init__(self, cfg: dict):
+        from vosk import KaldiRecognizer, Model, SetLogLevel
+
+        SetLogLevel(-1)  # убрать шумные логи Vosk
+        wc = cfg["trigger"]["wakeword"]
+        model_path = wc["model"]
+        if not os.path.isdir(os.path.join(model_path, "am")):
+            raise ModelNotReady(
+                f"Нет модели Vosk: {model_path}. "
+                "Скачай:  .venv\\Scripts\\python.exe download_wake_model.py"
+            )
+        self.phrases = [p.lower().strip() for p in wc.get("phrases", []) if p.strip()]
+        self.fuzzy = float(wc.get("fuzzy", 0.7))
+        self.rate = 16000
+        self._Rec = KaldiRecognizer
+        self.model = Model(model_path)
+
+    def _match(self, text: str) -> bool:
+        from difflib import SequenceMatcher
+
+        text = (text or "").lower().strip()
+        if not text:
+            return False
+        words = text.split()
+        for ph in self.phrases:
+            if ph in text:
+                return True
+            n = len(ph.split())
+            for i in range(max(1, len(words) - n + 1)):
+                window = " ".join(words[i:i + n])
+                if SequenceMatcher(None, ph, window).ratio() >= self.fuzzy:
+                    return True
+        return False
+
+    def wait(self) -> bool:
+        import json
+
+        import sounddevice as sd
+
+        rec = self._Rec(self.model, self.rate)
+        with sd.RawInputStream(samplerate=self.rate, blocksize=0,
+                               dtype="int16", channels=1) as stream:
+            while True:
+                data, _ = stream.read(4000)
+                buf = bytes(data)
+                if rec.AcceptWaveform(buf):
+                    if self._match(json.loads(rec.Result()).get("text", "")):
+                        return True
+                else:
+                    if self._match(json.loads(rec.PartialResult()).get("partial", "")):
+                        return True
+
+
+def make_trigger(cfg: dict):
+    mode = cfg.get("trigger", {}).get("mode", "push_to_talk")
+    if mode == "wakeword":
+        return WakeListener(cfg)
+    return PushToTalk(cfg)

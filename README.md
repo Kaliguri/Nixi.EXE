@@ -24,8 +24,9 @@
 # .\setup.ps1 -GPU       # + CUDA-ускорение распознавания (~1ГБ, нужна NVIDIA)
 # .\setup.ps1 -CoreOnly  # только ядро (без голоса)
 
-# 2. Скачай модель распознавания речи (для голосового режима, ~484МБ)
-.\.venv\Scripts\python.exe download_model.py
+# 2. Скачай модели для голоса
+.\.venv\Scripts\python.exe download_model.py        # распознавание команд (faster-whisper, ~484МБ)
+.\.venv\Scripts\python.exe download_wake_model.py   # фраза активации (Vosk, ~45МБ)
 
 # 3. Впиши ключи в .env
 #    ANTHROPIC_API_KEY=...   (https://console.anthropic.com/)
@@ -36,8 +37,11 @@
 .\run.ps1 -voice       # голосовой режим (микрофон + динамик)
 ```
 
-> Для голосового режима нужны микрофон и колонка/динамик. Активация записи —
-> по нажатию **Enter** (push-to-talk). Wake word («Окей, Гайда») добавим следующим шагом.
+> Для голосового режима нужны микрофон и колонка/динамик. По умолчанию — **wake word**:
+> ассистент постоянно слушает фразу активации («арс меджика»), затем пишет команду и сам
+> определяет конец по паузе (~1.2 сек). Фраза/варианты — в `config.yaml` → `trigger.wakeword`.
+> Откалибруй под свой голос:  `python -m tests.wake_calibrate live`.
+> Альтернатива — `trigger.mode: push_to_talk` (активация по Enter).
 >
 > **GPU vs CPU.** По умолчанию `config.yaml` → `stt.device: cuda`. Если не ставил `-GPU`,
 > переключи на `stt.device: cpu` и `compute_type: int8` — распознавание пойдёт на процессоре
@@ -69,7 +73,7 @@
 - [x] Текстовый режим: роутер, скиллы, Claude + GPT, переключение
 - [x] Голосовой режим: запись с VAD, faster-whisper (STT), edge-TTS (рус. голос)
 - [x] GPU-ускорение распознавания (CUDA 12 + cuDNN через pip, без системного CUDA)
-- [ ] Wake word (openWakeWord) вместо push-to-talk
+- [x] Wake word: «дежурное» прослушивание фразы (Vosk-споттер) + калибровка по голосу
 - [ ] Качественный локальный TTS (Piper / Silero)
 - [ ] Function calling: чтобы LLM сама вызывала скиллы
 - [ ] Вынос микрофона/динамика на 2-й телефон (спутник)
