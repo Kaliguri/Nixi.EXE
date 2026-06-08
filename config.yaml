@@ -19,8 +19,8 @@ models:
 # Распознавание речи (нужен голосовой режим)
 stt:
   engine: faster-whisper
-  model: small             # tiny | base | small | medium | large-v3
-  device: cuda             # cuda (есть GPU) | cpu
+  model: models/faster-whisper-small   # локальная папка (скачай через snapshot_download). Или имя: tiny|base|small|medium|large-v3
+  device: cuda             # cuda (GPU, нужны pip-пакеты nvidia-cublas-cu12 + nvidia-cudnn-cu12) | cpu
   compute_type: float16    # float16 для GPU; int8 для CPU
   language: ru
 

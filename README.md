@@ -20,20 +20,28 @@
 
 ```powershell
 # 1. Установка (создаст .venv, поставит зависимости, создаст .env)
-.\setup.ps1            # всё, включая голосовой стек
-# .\setup.ps1 -CoreOnly  # только ядро (без голоса) — если нужно быстро
+.\setup.ps1            # ядро + голосовой стек
+# .\setup.ps1 -GPU       # + CUDA-ускорение распознавания (~1ГБ, нужна NVIDIA)
+# .\setup.ps1 -CoreOnly  # только ядро (без голоса)
 
-# 2. Впиши ключи в .env
+# 2. Скачай модель распознавания речи (для голосового режима, ~484МБ)
+.\.venv\Scripts\python.exe download_model.py
+
+# 3. Впиши ключи в .env
 #    ANTHROPIC_API_KEY=...   (https://console.anthropic.com/)
 #    OPENAI_API_KEY=...      (https://platform.openai.com/api-keys)
 
-# 3. Запуск
+# 4. Запуск
 .\run.ps1              # текстовый режим (чат в консоли)
 .\run.ps1 -voice       # голосовой режим (микрофон + динамик)
 ```
 
 > Для голосового режима нужны микрофон и колонка/динамик. Активация записи —
 > по нажатию **Enter** (push-to-talk). Wake word («Окей, Гайда») добавим следующим шагом.
+>
+> **GPU vs CPU.** По умолчанию `config.yaml` → `stt.device: cuda`. Если не ставил `-GPU`,
+> переключи на `stt.device: cpu` и `compute_type: int8` — распознавание пойдёт на процессоре
+> (для модели `small` это пара секунд на фразу).
 
 ## Переключение моделей
 
@@ -59,9 +67,10 @@
 ## Статус и план
 
 - [x] Текстовый режим: роутер, скиллы, Claude + GPT, переключение
-- [x] Голосовой режим: запись с VAD, faster-whisper (STT), pyttsx3 (TTS)
+- [x] Голосовой режим: запись с VAD, faster-whisper (STT), edge-TTS (рус. голос)
+- [x] GPU-ускорение распознавания (CUDA 12 + cuDNN через pip, без системного CUDA)
 - [ ] Wake word (openWakeWord) вместо push-to-talk
-- [ ] Качественный русский TTS (Piper / Silero) вместо SAPI
+- [ ] Качественный локальный TTS (Piper / Silero)
 - [ ] Function calling: чтобы LLM сама вызывала скиллы
 - [ ] Вынос микрофона/динамика на 2-й телефон (спутник)
 

@@ -8,9 +8,12 @@ import os
 import tempfile
 
 import edge_tts
-from faster_whisper import WhisperModel
 
 from src.config import load_config
+from src.voice import _add_nvidia_dll_dirs
+
+_add_nvidia_dll_dirs()
+from faster_whisper import WhisperModel  # noqa: E402 — после добавления путей к CUDA-DLL
 
 PHRASE = "Привет! Я Гайда, голосовой ассистент. Включи музыку."
 

@@ -5,7 +5,41 @@
 """
 from __future__ import annotations
 
+import os
+
 SAMPLE_RATE = 16000
+
+
+class ModelNotReady(RuntimeError):
+    """Модель распознавания не скачана/недоступна."""
+
+
+def _add_nvidia_dll_dirs() -> None:
+    """Делает CUDA-DLL из pip-пакетов nvidia-* (cuBLAS/cuDNN) видимыми для CTranslate2 на Windows.
+
+    Недостаточно добавить путь — CTranslate2 не находит DLL по имени, поэтому
+    явно подгружаем их в процесс через WinDLL.
+    """
+    if os.name != "nt":
+        return
+    import ctypes
+    import glob
+    import sys
+
+    base = os.path.join(sys.prefix, "Lib", "site-packages", "nvidia")
+    bindirs = glob.glob(os.path.join(base, "*", "bin"))
+    for bindir in bindirs:
+        try:
+            os.add_dll_directory(bindir)
+        except OSError:
+            pass
+    # Принудительно грузим все CUDA-DLL (cuBLAS, cuDNN и зависимости).
+    for bindir in bindirs:
+        for dll in glob.glob(os.path.join(bindir, "*.dll")):
+            try:
+                ctypes.WinDLL(dll)
+            except OSError:
+                pass
 
 
 def record_until_silence(cfg: dict):
@@ -43,6 +77,7 @@ def record_until_silence(cfg: dict):
 
 class STT:
     def __init__(self, cfg: dict):
+        _add_nvidia_dll_dirs()
         from faster_whisper import WhisperModel
 
         scfg = cfg["stt"]
@@ -50,6 +85,18 @@ class STT:
         name = scfg.get("model", "small")
         device = scfg.get("device", "cuda")
         compute = scfg.get("compute_type", "float16")
+
+        # Если указан локальный путь, но нет model.bin — модель ещё не докачана.
+        looks_like_path = ("/" in name) or ("\\" in name)
+        if looks_like_path and not os.path.isfile(os.path.join(name, "model.bin")):
+            raise ModelNotReady(
+                f"Модель не готова (нет model.bin в {name}) — загрузка ещё идёт или не запущена.\n"
+                f"Скачай модель командой:\n"
+                f'  $env:HF_HUB_ENABLE_HF_TRANSFER = "1"\n'
+                f"  .\\.venv\\Scripts\\python.exe -c \"from huggingface_hub import "
+                f"snapshot_download; snapshot_download('Systran/faster-whisper-small', "
+                f"local_dir='models/faster-whisper-small')\""
+            )
         try:
             self.model = WhisperModel(name, device=device, compute_type=compute)
         except Exception as e:  # noqa: BLE001 — нет CUDA-библиотек и т.п.

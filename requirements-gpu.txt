@@ -1,0 +1,6 @@
+# --- GPU-ускорение распознавания (опционально, ~1 ГБ) ---
+# Нужно только для stt.device: cuda в config.yaml.
+# ctranslate2 4.x требует CUDA 12 + cuDNN 9 (системный CUDA ставить не нужно — DLL едут в venv).
+# Поиск/загрузку этих DLL делает _add_nvidia_dll_dirs() в src/voice.py.
+nvidia-cublas-cu12
+nvidia-cudnn-cu12>=9,<10

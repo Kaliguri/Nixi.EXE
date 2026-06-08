@@ -38,12 +38,21 @@ def text_loop(router: Router) -> None:
 
 
 def voice_loop(router: Router, cfg: dict) -> None:
-    from src.voice import Trigger, STT, TTS, record_until_silence
+    from src.voice import Trigger, STT, TTS, ModelNotReady, record_until_silence
 
     print(f"=== {router.name}: голосовой режим ===")
-    print("Загружаю модели (первый запуск качает модель распознавания)...")
+    print("Загружаю модели...")
     trigger = Trigger(cfg)
-    stt = STT(cfg)
+    try:
+        stt = STT(cfg)
+    except ModelNotReady as e:
+        print(f"\n[!] Голосовой режим недоступен: модель распознавания не готова.\n{e}\n"
+              "Пока можешь пользоваться текстовым режимом:  .\\run.ps1")
+        return
+    except Exception as e:  # noqa: BLE001
+        print(f"\n[!] Не удалось загрузить распознавание речи: {e}\n"
+              "Проверь модель/конфиг. Текстовый режим работает:  .\\run.ps1")
+        return
     tts = TTS(cfg)
     print("Готово.")
     tts.say(f"Привет! Я {router.name}. Чем помочь?")
