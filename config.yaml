@@ -1,0 +1,43 @@
+assistant:
+  name: "Гайда"            # имя ассистента (в будущем — wake word)
+  default_model: claude    # с каким LLM работаем по умолчанию: claude | gpt
+  language: ru
+
+# Две модели, переключаемые голосом/текстом.
+# Скажи "Клод, ..." или "ГПТ, ..." чтобы адресовать конкретной модели
+# или просто переключиться на неё до отмены.
+models:
+  claude:
+    provider: anthropic
+    model: claude-sonnet-4-6       # дёшево и быстро; можно claude-opus-4-8
+    triggers: ["клод", "клауд", "claude", "клода"]
+  gpt:
+    provider: openai
+    model: gpt-4o-mini             # дёшево; можно gpt-4o
+    triggers: ["гпт", "чат гпт", "gpt", "джипити"]
+
+# Распознавание речи (нужен голосовой режим)
+stt:
+  engine: faster-whisper
+  model: small             # tiny | base | small | medium | large-v3
+  device: cuda             # cuda (есть GPU) | cpu
+  compute_type: float16    # float16 для GPU; int8 для CPU
+  language: ru
+
+# Синтез речи
+tts:
+  engine: edge             # edge (нейро-голос Microsoft, нужен интернет) | pyttsx3 (офлайн SAPI)
+  edge_voice: "ru-RU-SvetlanaNeural"   # или ru-RU-DmitryNeural (муж.)
+  edge_rate: "+0%"         # скорость: "+10%", "-10%" и т.п.
+  rate: 180                # скорость речи (для pyttsx3)
+  voice: ""                # id голоса для pyttsx3; пусто = системный по умолчанию
+
+# Активация записи в голосовом режиме
+trigger:
+  mode: push_to_talk       # push_to_talk (жми Enter) | wakeword
+  wakeword: "hey_jarvis"   # для режима wakeword (openWakeWord)
+  silence_seconds: 1.2     # сколько тишины = конец фразы
+  max_seconds: 15          # максимум длины записи
+
+skills:
+  enabled: true
