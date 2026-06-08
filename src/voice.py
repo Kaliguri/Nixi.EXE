@@ -217,6 +217,14 @@ class WakeListener:
                 "Скачай:  .venv\\Scripts\\python.exe download_wake_model.py"
             )
         self.phrases = [p.lower().strip() for p in wc.get("phrases", []) if p.strip()]
+        # Доп. варианты из калибровки (wake_calibrate live их сам записывает).
+        pf = wc.get("phrases_file", "wake_phrases.txt")
+        if pf and os.path.isfile(pf):
+            with open(pf, encoding="utf-8") as f:
+                for line in f:
+                    s = line.strip().lower()
+                    if s and s not in self.phrases:
+                        self.phrases.append(s)
         self.fuzzy = float(wc.get("fuzzy", 0.7))
         self.rate = 16000
         self._Rec = KaldiRecognizer
@@ -242,15 +250,17 @@ class WakeListener:
     def wait(self) -> bool:
         import json
 
+        import numpy as np
         import sounddevice as sd
 
         rec = self._Rec(self.model, self.rate)
-        with sd.RawInputStream(samplerate=self.rate, blocksize=0,
-                               dtype="int16", channels=1) as stream:
+        block = int(self.rate * 0.25)
+        with sd.InputStream(samplerate=self.rate, channels=1,
+                            dtype="float32", blocksize=block) as stream:
             while True:
-                data, _ = stream.read(4000)
-                buf = bytes(data)
-                if rec.AcceptWaveform(buf):
+                data, _ = stream.read(block)
+                pcm = (np.clip(data[:, 0], -1, 1) * 32767).astype(np.int16).tobytes()
+                if rec.AcceptWaveform(pcm):
                     if self._match(json.loads(rec.Result()).get("text", "")):
                         return True
                 else:

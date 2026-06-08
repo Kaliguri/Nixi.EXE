@@ -55,26 +55,47 @@ def synth_mode(cfg: dict, model: Model) -> None:
 
 
 def live_mode(model: Model) -> None:
+    import numpy as np
     import sounddevice as sd
 
-    rec = KaldiRecognizer(model, 16000)
+    rate = 16000
+    block = int(rate * 0.25)
+    rec = KaldiRecognizer(model, rate)
     seen: dict[str, int] = {}
-    print("ЖИВАЯ калибровка. Скажи фразу активации 5–10 раз, чётко.")
+    print("ЖИВАЯ калибровка. Скажи фразу активации 5–10 раз, чётко, близко к микрофону.")
+    print("Полоска = уровень звука: при речи должна заметно расти.")
     print("Когда закончишь — Ctrl+C.\n")
     try:
-        with sd.RawInputStream(samplerate=16000, blocksize=0, dtype="int16", channels=1) as st:
+        with sd.InputStream(samplerate=rate, channels=1, dtype="float32", blocksize=block) as st:
             while True:
-                data, _ = st.read(4000)
-                if rec.AcceptWaveform(bytes(data)):
+                data, _ = st.read(block)
+                mono = data[:, 0]
+                peak = float(np.max(np.abs(mono))) if len(mono) else 0.0
+                bar = "#" * min(40, int(peak * 80))
+                print(f"\rуровень |{bar:<40}| {peak:.3f}", end="")
+                pcm = (np.clip(mono, -1, 1) * 32767).astype(np.int16).tobytes()
+                if rec.AcceptWaveform(pcm):
                     t = json.loads(rec.Result()).get("text", "")
                     if t:
                         seen[t] = seen.get(t, 0) + 1
-                        print("  услышано:", repr(t))
+                        print(f"\n  услышано: {t!r}")
     except KeyboardInterrupt:
-        print("\n--- ИТОГ: что Vosk слышал (по убыванию частоты) ---")
-        for t, c in sorted(seen.items(), key=lambda x: -x[1]):
+        t = json.loads(rec.FinalResult()).get("text", "")
+        if t:
+            seen[t] = seen.get(t, 0) + 1
+        print("\n\n--- ИТОГ: что Vosk слышал (по убыванию частоты) ---")
+        ranked = sorted(seen.items(), key=lambda x: -x[1])
+        for t, c in ranked:
             print(f"  {c}x  {t!r}")
-        print("\nВпиши подходящие строки в config.yaml -> trigger.wakeword.phrases")
+        top = [t for t, c in ranked if c >= 2] or [t for t, _ in ranked[:3]]
+        if top:
+            with open("wake_phrases.txt", "w", encoding="utf-8") as f:
+                f.write("\n".join(top) + "\n")
+            print(f"\nСохранил {len(top)} вариант(ов) в wake_phrases.txt — wake их уже использует.")
+            print("Запускай:  .\\run.ps1 -voice")
+        else:
+            print("\nVosk ничего не распознал. Смотри на полоску уровня: если при речи она")
+            print("почти не растёт — повысь громкость микрофона в Windows и говори ближе.")
 
 
 def main() -> None:

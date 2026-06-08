@@ -40,6 +40,7 @@ trigger:
   beep: true               # короткий сигнал после активации
   wakeword:
     model: models/vosk-model-small-ru   # модель Vosk (download_wake_model.py)
+    phrases_file: wake_phrases.txt       # сюда калибровка сама пишет варианты под твой голос
     phrases:               # варианты, как Vosk может расслышать фразу активации
       - "арс меджика"      # (откалибруй под свой голос: wake_calibrate live)
       - "архимед джека"    # так Vosk расслышал синтез — стартовый вариант

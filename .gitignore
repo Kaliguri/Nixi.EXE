@@ -8,6 +8,9 @@ venv/
 # Secrets
 .env
 
+# Личная калибровка wake word (под конкретный голос)
+wake_phrases.txt
+
 # Models / caches (скачиваются при первом запуске)
 models/
 *.onnx
