@@ -3,6 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { Button, Select } from '@/shared/ui';
 import { useSaveSettings, useSettings } from '@/shared/api';
 
+// Готовые варианты моделей по провайдеру. Можно выбрать из списка
+// (текущее значение из config.yaml добавляется, если его в списке нет).
+const MODEL_CATALOG: Record<string, string[]> = {
+  anthropic: ['claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'],
+  google: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'],
+};
+
 export function LlmSettings() {
   const { t } = useTranslation();
   const { data } = useSettings();
@@ -37,18 +45,21 @@ export function LlmSettings() {
           label: `${k.toUpperCase()} (${data.models[k].provider})`,
         }))}
       />
-      {keys.map((k) => (
-        <label key={k} className="block">
-          <span className="mb-1 block text-[11px] uppercase tracking-wide text-term-dim">
-            {t('llm.modelFor', { name: k.toUpperCase() })}
-          </span>
-          <input
-            value={models[k] ?? ''}
-            onChange={(e) => setModels((m) => ({ ...m, [k]: e.target.value }))}
-            className="w-full border border-term-border bg-term-panel-2 px-3 py-2 font-mono text-sm text-term-fg transition-colors focus:border-phosphor focus:outline-none"
+      {keys.map((k) => {
+        const provider = data.models[k].provider ?? '';
+        const current = models[k] ?? '';
+        const catalog = MODEL_CATALOG[provider] ?? [];
+        const values = current && !catalog.includes(current) ? [current, ...catalog] : catalog;
+        return (
+          <Select
+            key={k}
+            label={t('llm.modelFor', { name: k.toUpperCase() })}
+            value={current}
+            onValueChange={(v) => setModels((m) => ({ ...m, [k]: v }))}
+            options={values.map((v) => ({ value: v, label: v }))}
           />
-        </label>
-      ))}
+        );
+      })}
       <Button onClick={onSave} disabled={save.isPending}>
         {save.isPending ? t('common.saving') : t('common.save')}
       </Button>

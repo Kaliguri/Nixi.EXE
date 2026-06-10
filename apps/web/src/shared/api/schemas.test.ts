@@ -8,6 +8,8 @@ const validSettings = {
   tts: { engine: 'edge', edge_voice: 'ru-RU-SvetlanaNeural', edge_rate: '+0%' },
   trigger: {
     mode: 'wakeword',
+    end_mode: 'phrase',
+    end_phrases: ['выполняй'],
     silence_seconds: 1.2,
     max_seconds: 15,
     beep: true,

@@ -36,6 +36,8 @@ class WakeSettings(BaseModel):
 
 class TriggerSettings(BaseModel):
     mode: Optional[str] = None           # wakeword | push_to_talk
+    end_mode: Optional[str] = None       # phrase | silence
+    end_phrases: Optional[list[str]] = None
     silence_seconds: Optional[float] = None
     max_seconds: Optional[float] = None
     beep: Optional[bool] = None

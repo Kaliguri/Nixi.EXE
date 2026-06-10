@@ -21,6 +21,8 @@ export type SettingsUpdate = {
   tts?: Partial<Settings['tts']>;
   trigger?: {
     mode?: string;
+    end_mode?: string;
+    end_phrases?: string[];
     silence_seconds?: number;
     max_seconds?: number;
     beep?: boolean;

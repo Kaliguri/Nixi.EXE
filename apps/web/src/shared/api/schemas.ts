@@ -60,6 +60,8 @@ export const settingsSchema = z.object({
   }),
   trigger: z.object({
     mode: z.string(),
+    end_mode: z.string(),
+    end_phrases: z.array(z.string()),
     silence_seconds: z.number(),
     max_seconds: z.number(),
     beep: z.boolean(),

@@ -14,6 +14,68 @@ class ModelNotReady(RuntimeError):
     """Модель распознавания не скачана/недоступна."""
 
 
+# Кэш загруженных моделей Vosk: загрузка тяжёлая, а wake-word и режим
+# «фразы конца» используют ту же модель — держим один экземпляр на путь.
+_VOSK_MODELS: dict[str, object] = {}
+
+
+def _load_vosk_model(model_path: str):
+    """Загружает (с кэшем) модель Vosk. Бросает ModelNotReady, если её нет."""
+    import os as _os
+
+    if not _os.path.isdir(_os.path.join(model_path, "am")):
+        raise ModelNotReady(
+            f"Нет модели Vosk: {model_path}. "
+            "Скачай:  .venv\\Scripts\\python.exe download_wake_model.py"
+        )
+    if model_path not in _VOSK_MODELS:
+        from vosk import Model, SetLogLevel
+
+        SetLogLevel(-1)  # убрать шумные логи Vosk
+        _VOSK_MODELS[model_path] = Model(model_path)
+    return _VOSK_MODELS[model_path]
+
+
+def fuzzy_contains(text: str, phrases: list[str], fuzzy: float) -> bool:
+    """Есть ли в тексте одна из фраз (точно или с нечётким совпадением)."""
+    from difflib import SequenceMatcher
+
+    text = (text or "").lower().strip()
+    if not text:
+        return False
+    words = text.split()
+    for ph in phrases:
+        if not ph:
+            continue
+        if ph in text:
+            return True
+        n = len(ph.split())
+        for i in range(max(1, len(words) - n + 1)):
+            window = " ".join(words[i:i + n])
+            if SequenceMatcher(None, ph, window).ratio() >= fuzzy:
+                return True
+    return False
+
+
+def end_phrases(cfg: dict) -> list[str]:
+    """Фразы-завершители команды из config.yaml (trigger.end_phrases)."""
+    tcfg = cfg.get("trigger", {})
+    return [p.lower().strip() for p in (tcfg.get("end_phrases") or []) if p and p.strip()]
+
+
+def strip_end_phrases(text: str, phrases: list[str]) -> str:
+    """Срезает фразу-завершитель (и хвостовую пунктуацию) с конца распознанного текста."""
+    import re
+
+    s = (text or "").strip()
+    for ph in sorted([p for p in phrases if p], key=len, reverse=True):
+        pat = re.compile(r"[\s,.:!?\-—]*" + re.escape(ph) + r"[\s,.:!?\-—]*$", re.IGNORECASE)
+        new = pat.sub("", s)
+        if new != s:
+            return new.strip()
+    return s
+
+
 def _add_nvidia_dll_dirs() -> None:
     """Делает CUDA-DLL из pip-пакетов nvidia-* (cuBLAS/cuDNN) видимыми для CTranslate2 на Windows.
 
@@ -80,6 +142,59 @@ def record_until_silence(cfg: dict, on_block=None):
                 silent_blocks += 1
                 if silent_blocks >= silence_limit:
                     break
+    if not frames:
+        return np.zeros(0, dtype="float32")
+    return np.concatenate(frames)
+
+
+def record_until_phrase(cfg: dict, on_block=None, vosk_model=None):
+    """Записывает аудио, пока не услышит фразу-завершитель (через Vosk), затем останавливается.
+
+    Возвращает np.ndarray float32 mono — вместе с произнесённой фразой конца
+    (её удалит strip_end_phrases уже из распознанного whisper-ом текста).
+
+    on_block(mono) — колбэк уровня для VU-метра.
+    vosk_model     — переиспользуемая модель (engine отдаёт ту, что уже грузит wake-word).
+    Бросает ModelNotReady, если модель Vosk недоступна.
+    """
+    import json
+
+    import numpy as np
+    import sounddevice as sd
+
+    from src.audio import apply_gain, get_audio_cfg
+
+    in_dev, _out, in_gain, _og = get_audio_cfg(cfg)
+    tcfg = cfg.get("trigger", {})
+    wake = tcfg.get("wakeword") or {}
+    max_s = float(tcfg.get("max_seconds", 15))
+    block = int(SAMPLE_RATE * 0.1)  # блок 100мс
+    max_blocks = int(max_s / 0.1)
+
+    phrases = end_phrases(cfg)
+    fuzzy = float(wake.get("fuzzy", 0.7))
+
+    if vosk_model is None:
+        vosk_model = _load_vosk_model(wake.get("model", "models/vosk-model-small-ru"))
+    from vosk import KaldiRecognizer
+
+    rec = KaldiRecognizer(vosk_model, SAMPLE_RATE)
+
+    frames = []
+    with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="float32",
+                        blocksize=block, device=in_dev) as stream:
+        for _ in range(max_blocks):
+            data, _overflow = stream.read(block)
+            mono = apply_gain(data[:, 0], in_gain)
+            frames.append(mono)
+            if on_block is not None:
+                on_block(mono)
+            pcm = (np.clip(mono, -1, 1) * 32767).astype(np.int16).tobytes()
+            if rec.AcceptWaveform(pcm):
+                if fuzzy_contains(json.loads(rec.Result()).get("text", ""), phrases, fuzzy):
+                    break
+            elif fuzzy_contains(json.loads(rec.PartialResult()).get("partial", ""), phrases, fuzzy):
+                break
     if not frames:
         return np.zeros(0, dtype="float32")
     return np.concatenate(frames)
@@ -219,17 +334,11 @@ class WakeListener:
     """
 
     def __init__(self, cfg: dict):
-        from vosk import KaldiRecognizer, Model, SetLogLevel
+        from vosk import KaldiRecognizer
 
-        SetLogLevel(-1)  # убрать шумные логи Vosk
         self.cfg = cfg
         wc = cfg["trigger"]["wakeword"]
         model_path = wc["model"]
-        if not os.path.isdir(os.path.join(model_path, "am")):
-            raise ModelNotReady(
-                f"Нет модели Vosk: {model_path}. "
-                "Скачай:  .venv\\Scripts\\python.exe download_wake_model.py"
-            )
         self.phrases = [p.lower().strip() for p in wc.get("phrases", []) if p.strip()]
         # Доп. варианты из калибровки (wake_calibrate live их сам записывает).
         pf = wc.get("phrases_file", "wake_phrases.txt")
@@ -242,24 +351,10 @@ class WakeListener:
         self.fuzzy = float(wc.get("fuzzy", 0.7))
         self.rate = 16000
         self._Rec = KaldiRecognizer
-        self.model = Model(model_path)
+        self.model = _load_vosk_model(model_path)
 
     def _match(self, text: str) -> bool:
-        from difflib import SequenceMatcher
-
-        text = (text or "").lower().strip()
-        if not text:
-            return False
-        words = text.split()
-        for ph in self.phrases:
-            if ph in text:
-                return True
-            n = len(ph.split())
-            for i in range(max(1, len(words) - n + 1)):
-                window = " ".join(words[i:i + n])
-                if SequenceMatcher(None, ph, window).ratio() >= self.fuzzy:
-                    return True
-        return False
+        return fuzzy_contains(text, self.phrases, self.fuzzy)
 
     def wait(self, on_block=None, should_stop=None, ptt=None) -> bool:
         """Слушает фразу активации.

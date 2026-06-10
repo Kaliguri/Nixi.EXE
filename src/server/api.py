@@ -51,6 +51,8 @@ def serialize_settings(cfg: dict) -> dict:
         },
         "trigger": {
             "mode": tcfg.get("mode", "wakeword"),
+            "end_mode": tcfg.get("end_mode", "phrase"),
+            "end_phrases": tcfg.get("end_phrases", []),
             "silence_seconds": tcfg.get("silence_seconds", 1.2),
             "max_seconds": tcfg.get("max_seconds", 15),
             "beep": tcfg.get("beep", True),

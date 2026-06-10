@@ -125,8 +125,9 @@ class AssistantEngine:
         return False
 
     def _run(self) -> None:
-        from src.voice import (STT, TTS, ModelNotReady, beep, make_trigger,
-                               record_until_silence)
+        from src.voice import (STT, TTS, ModelNotReady, beep, end_phrases,
+                               make_trigger, record_until_phrase,
+                               record_until_silence, strip_end_phrases)
 
         self.set_state("loading")
         try:
@@ -165,10 +166,23 @@ class AssistantEngine:
                     beep()
 
                 self.set_state("recording")
-                audio = record_until_silence(self.cfg, on_block=self._on_input_block)
+                end_mode = self.cfg.get("trigger", {}).get("end_mode", "phrase")
+                if end_mode == "silence":
+                    audio = record_until_silence(self.cfg, on_block=self._on_input_block)
+                else:
+                    try:
+                        vmodel = getattr(self.trigger, "model", None)
+                        audio = record_until_phrase(
+                            self.cfg, on_block=self._on_input_block, vosk_model=vmodel
+                        )
+                    except ModelNotReady as e:
+                        self.emit("error", message=f"Режим фразы конца недоступен ({e}); жду паузу.")
+                        audio = record_until_silence(self.cfg, on_block=self._on_input_block)
 
                 self.set_state("thinking")
                 text = self.stt.transcribe(audio)
+                if end_mode != "silence":
+                    text = strip_end_phrases(text, end_phrases(self.cfg))
                 if not text:
                     self.emit("transcript", role="system", text="(не расслышал)")
                     continue
