@@ -141,11 +141,11 @@ def put_keys(body: KeysUpdate, request: Request) -> dict:
 # --- TTS: голоса и тест ---
 
 @router.get("/voices")
-async def get_voices() -> list[dict]:
+async def get_voices(request: Request) -> list[dict]:
     import edge_tts
 
     voices = await edge_tts.list_voices()
-    return [
+    items = [
         {
             "short_name": v["ShortName"],
             "gender": v.get("Gender", ""),
@@ -154,6 +154,13 @@ async def get_voices() -> list[dict]:
         for v in voices
         if v.get("Locale", "").startswith("ru")
     ]
+    # Голоса-пресеты (например «Никси (аниме)») — отдельными строками сверху списка.
+    presets = (_engine(request).cfg.get("tts") or {}).get("voice_presets") or {}
+    pinned = [
+        {"short_name": pid, "gender": "Preset", "name": p.get("label", pid)}
+        for pid, p in presets.items()
+    ]
+    return pinned + items
 
 
 @router.post("/tts/test")

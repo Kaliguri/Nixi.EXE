@@ -248,10 +248,17 @@ class TTS:
             self._init_pyttsx()
         elif self.engine_name == "edge":
             import edge_tts  # noqa: F401  — проверяем, что установлен
-            self.voice = self.cfg.get("edge_voice", "ru-RU-SvetlanaNeural")
-            self.rate = self.cfg.get("edge_rate", "+0%")
+            voice = self.cfg.get("edge_voice", "ru-RU-SvetlanaNeural")
+            rate = self.cfg.get("edge_rate", "+0%")
             # pitch выше = «моложе/звонче» (аниме-вайб). Формат edge: "+30Hz", "-10Hz".
-            self.pitch = self.cfg.get("edge_pitch", "+0Hz")
+            pitch = self.cfg.get("edge_pitch", "+0Hz")
+            # Если выбран голос-пресет (voice_presets) — он задаёт голос/темп/высоту сам.
+            preset = (self.cfg.get("voice_presets") or {}).get(voice)
+            if preset:
+                voice = preset.get("edge_voice", "ru-RU-SvetlanaNeural")
+                rate = preset.get("edge_rate", rate)
+                pitch = preset.get("edge_pitch", pitch)
+            self.voice, self.rate, self.pitch = voice, rate, pitch
         else:
             raise NotImplementedError(
                 f"TTS '{self.engine_name}' не поддержан (есть edge, pyttsx3)."
