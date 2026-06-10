@@ -13,6 +13,8 @@ wake_phrases.txt
 
 # Models / caches (скачиваются при первом запуске)
 models/
+# Референс-клипы голоса для XTTS (генерит setup_xtts.py / кладёт пользователь)
+voices/
 *.onnx
 *.bin
 .cache/

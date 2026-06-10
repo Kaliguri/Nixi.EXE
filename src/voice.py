@@ -36,6 +36,31 @@ def _load_vosk_model(model_path: str):
     return _VOSK_MODELS[model_path]
 
 
+# Кэш загруженной модели XTTS: ~1.8 ГБ на диске и несколько ГБ VRAM, грузится
+# секунды. reload()/tts_test пересоздают TTS — без кэша модель бы грузилась
+# каждый раз. Ключ — (имя/путь модели, использовать ли GPU).
+_XTTS_MODELS: dict[tuple, object] = {}
+
+
+def _load_xtts(model: str, use_cuda: bool):
+    """Загружает (с кэшем) Coqui XTTS-v2. Бросает ModelNotReady, если стек не установлен."""
+    key = (model, use_cuda)
+    if key not in _XTTS_MODELS:
+        # Авто-согласие с некоммерческой лицензией модели (Coqui CPML) — иначе
+        # первая загрузка зависнет на интерактивном вопросе y/n.
+        os.environ.setdefault("COQUI_TOS_AGREED", "1")
+        try:
+            from TTS.api import TTS as CoquiTTS
+        except Exception as e:  # noqa: BLE001 — пакет не установлен
+            raise ModelNotReady(
+                "Не установлен стек XTTS. Поставь:\n"
+                "  .\\.venv\\Scripts\\python.exe -m pip install -r requirements-xtts.txt\n"
+                "и скачай модель:  .\\.venv\\Scripts\\python.exe setup_xtts.py"
+            ) from e
+        _XTTS_MODELS[key] = CoquiTTS(model, gpu=use_cuda)
+    return _XTTS_MODELS[key]
+
+
 def fuzzy_contains(text: str, phrases: list[str], fuzzy: float) -> bool:
     """Есть ли в тексте одна из фраз (точно или с нечётким совпадением)."""
     from difflib import SequenceMatcher
@@ -259,9 +284,18 @@ class TTS:
                 rate = preset.get("edge_rate", rate)
                 pitch = preset.get("edge_pitch", pitch)
             self.voice, self.rate, self.pitch = voice, rate, pitch
+        elif self.engine_name == "xtts":
+            # Coqui XTTS-v2: нейро-клон голоса по референсу. Модель НЕ грузим здесь
+            # (тяжело, а reload пересоздаёт TTS) — грузится лениво при первом say().
+            xc = self.cfg.get("xtts") or {}
+            self.xtts_model = xc.get("model", "tts_models/multilingual/multi-dataset/xtts_v2")
+            self.xtts_use_cuda = bool(xc.get("use_cuda", True))
+            self.xtts_language = xc.get("language", "ru")
+            self.xtts_speaker_wav = xc.get("speaker_wav", "voices/nixi_ref.wav")
+            self.xtts_speaker = xc.get("speaker")  # встроенный спикер, если нет референса
         else:
             raise NotImplementedError(
-                f"TTS '{self.engine_name}' не поддержан (есть edge, pyttsx3)."
+                f"TTS '{self.engine_name}' не поддержан (есть edge, pyttsx3, xtts)."
             )
 
     def _init_pyttsx(self) -> None:
@@ -276,6 +310,14 @@ class TTS:
     def say(self, text: str, on_level=None) -> None:
         if not text:
             return
+        if self.engine_name == "xtts":
+            try:
+                self._say_xtts(text, on_level=on_level)
+                return
+            except Exception as e:  # noqa: BLE001 — нет модели/VRAM и т.п.
+                print(f"[TTS] xtts не сработал ({e}); падаю на системный голос.")
+                if self._pyttsx is None:
+                    self._init_pyttsx()
         if self.engine_name == "edge":
             try:
                 self._say_edge(text, on_level=on_level)
@@ -307,6 +349,35 @@ class TTS:
             ).save(path)
 
         asyncio.run(_gen())
+        data, sr = sf.read(path, dtype="float32")
+        out_dev = self.audio.get("output_device")
+        out_gain = float(self.audio.get("output_gain", 1.0))
+        play(data, sr, device=out_dev, gain=out_gain, on_level=on_level)
+
+    def _say_xtts(self, text: str, on_level=None) -> None:
+        import os
+        import tempfile
+
+        import soundfile as sf
+
+        from src.audio import play
+
+        model = _load_xtts(self.xtts_model, self.xtts_use_cuda)
+        path = os.path.join(tempfile.gettempdir(), "assistant_tts.wav")
+
+        # Референс-клип задаёт тембр (клонирование). Если файла нет — пробуем
+        # встроенного спикера; если и его нет — берём первого из модели.
+        kwargs = {"text": text, "file_path": path, "language": self.xtts_language}
+        if self.xtts_speaker_wav and os.path.isfile(self.xtts_speaker_wav):
+            kwargs["speaker_wav"] = self.xtts_speaker_wav
+        elif self.xtts_speaker:
+            kwargs["speaker"] = self.xtts_speaker
+        else:
+            names = getattr(model, "speakers", None)
+            if names:
+                kwargs["speaker"] = names[0]
+        model.tts_to_file(**kwargs)
+
         data, sr = sf.read(path, dtype="float32")
         out_dev = self.audio.get("output_device")
         out_gain = float(self.audio.get("output_gain", 1.0))

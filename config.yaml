@@ -31,7 +31,7 @@ stt:
 
 # Синтез речи
 tts:
-  engine: edge             # edge (нейро-голос Microsoft, нужен интернет) | pyttsx3 (офлайн SAPI)
+  engine: xtts             # xtts (нейро-клон, аниме-тембр) | edge (голос MS) | pyttsx3 (офлайн SAPI)
   # Активный голос: id пресета из voice_presets (ниже) ИЛИ ShortName edge-голоса.
   edge_voice: "nixi"
   edge_rate: "+0%"         # скорость для НЕпресетных голосов: "+10%", "-10%" и т.п.
@@ -46,6 +46,14 @@ tts:
       edge_pitch: "+40Hz"          # звонкий «аниме» тембр (выше = выше голос)
   rate: 180                # скорость речи (для pyttsx3)
   voice: ""                # id голоса для pyttsx3; пусто = системный по умолчанию
+  # XTTS-v2 (engine: xtts) — «настоящий» аниме-тембр через нейро-клонирование.
+  # Установка: requirements-xtts.txt + setup_xtts.py (см. эти файлы).
+  xtts:
+    model: "tts_models/multilingual/multi-dataset/xtts_v2"
+    use_cuda: true                  # GPU (RTX); false = CPU (медленнее, но без VRAM)
+    language: "ru"                  # ru | en (XTTS многоязычный)
+    speaker_wav: "voices/nixi_ref.wav"  # референс-клип голоса (клонируется его тембр)
+    speaker: null                   # встроенный спикер XTTS, если нет референс-файла
 
 # Активация записи в голосовом режиме
 trigger:

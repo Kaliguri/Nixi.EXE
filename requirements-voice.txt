@@ -15,6 +15,8 @@ vosk>=0.3.45
 #   pyttsx3  — офлайн через системный SAPI5 (фолбэк; для русского нужен русский голос в Windows)
 edge-tts>=6.1
 pyttsx3>=2.90
+#   xtts     — нейро-клон голоса (Coqui XTTS-v2) для «настоящего» аниме-тембра.
+#              Тяжёлый стек (torch + модель) — ставится отдельно: requirements-xtts.txt
 
 # Wake word (опционально; по умолчанию используется push-to-talk)
 # openwakeword>=0.6

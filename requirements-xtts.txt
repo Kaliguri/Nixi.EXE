@@ -1,0 +1,20 @@
+# --- XTTS-v2: «настоящий» аниме-тембр через нейро-клонирование голоса ---
+# Тяжёлый стек (torch ~2.5 ГБ + модель ~1.8 ГБ). Ставится поверх requirements-voice.txt.
+# Нужен только для tts.engine: xtts в config.yaml.
+#
+# ВАЖНО: torch ставь ОТДЕЛЬНО с CUDA-индекса (иначе подтянется CPU-сборка):
+#   .\.venv\Scripts\python.exe -m pip install torch==2.5.1 torchaudio==2.5.1 \
+#       --index-url https://download.pytorch.org/whl/cu121
+# torch 2.5.x выбран намеренно: в 2.6 поменяли дефолт torch.load(weights_only),
+# что ломает загрузку чекпоинтов XTTS.
+#
+# Затем этот файл:
+#   .\.venv\Scripts\python.exe -m pip install -r requirements-xtts.txt
+# И загрузка модели + дефолтный референс:
+#   .\.venv\Scripts\python.exe setup_xtts.py
+
+# Поддерживаемый форк Coqui TTS (оригинальный пакет TTS заброшен).
+# Импортируется как `import TTS`, лицензия модели XTTS — Coqui CPML (некоммерческая).
+coqui-tts>=0.25
+# transformers 5.x убрал isin_mps_friendly, который нужен coqui-tts → держим 4.x.
+transformers>=4.57,<5
