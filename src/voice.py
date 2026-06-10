@@ -250,6 +250,8 @@ class TTS:
             import edge_tts  # noqa: F401  — проверяем, что установлен
             self.voice = self.cfg.get("edge_voice", "ru-RU-SvetlanaNeural")
             self.rate = self.cfg.get("edge_rate", "+0%")
+            # pitch выше = «моложе/звонче» (аниме-вайб). Формат edge: "+30Hz", "-10Hz".
+            self.pitch = self.cfg.get("edge_pitch", "+0Hz")
         else:
             raise NotImplementedError(
                 f"TTS '{self.engine_name}' не поддержан (есть edge, pyttsx3)."
@@ -293,7 +295,9 @@ class TTS:
         path = os.path.join(tempfile.gettempdir(), "assistant_tts.mp3")
 
         async def _gen() -> None:
-            await edge_tts.Communicate(text, self.voice, rate=self.rate).save(path)
+            await edge_tts.Communicate(
+                text, self.voice, rate=self.rate, pitch=self.pitch
+            ).save(path)
 
         asyncio.run(_gen())
         data, sr = sf.read(path, dtype="float32")

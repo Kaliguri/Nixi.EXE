@@ -32,8 +32,9 @@ stt:
 # Синтез речи
 tts:
   engine: edge             # edge (нейро-голос Microsoft, нужен интернет) | pyttsx3 (офлайн SAPI)
-  edge_voice: "ru-RU-DmitryNeural"     # или ru-RU-DmitryNeural (муж.)
-  edge_rate: "+0%"         # скорость: "+10%", "-10%" и т.п.
+  edge_voice: "ru-RU-SvetlanaNeural"   # жен. (Никси); ru-RU-DmitryNeural — муж.
+  edge_rate: "+8%"         # скорость: "+10%", "-10%" и т.п. (живее = чуть бодрее)
+  edge_pitch: "+30Hz"      # высота тона: выше = звонче/«аниме». Формат "+30Hz", "-10Hz"
   rate: 180                # скорость речи (для pyttsx3)
   voice: ""                # id голоса для pyttsx3; пусто = системный по умолчанию
 
