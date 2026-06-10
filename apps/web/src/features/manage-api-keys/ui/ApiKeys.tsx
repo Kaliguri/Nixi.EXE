@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Button } from '@/shared/ui';
 import { useKeys, useSaveKeys } from '@/shared/api';
 
@@ -8,6 +9,7 @@ const FIELDS = [
 ] as const;
 
 export function ApiKeys() {
+  const { t } = useTranslation();
   const { data } = useKeys();
   const save = useSaveKeys();
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -20,16 +22,17 @@ export function ApiKeys() {
 
   return (
     <div className="max-w-md space-y-4">
-      <p className="text-xs text-zinc-500">
-        Ключи хранятся локально в <code>.env</code>. Поле показывает только маску текущего ключа —
-        введи новый, чтобы заменить, или оставь пустым.
+      <p className="text-xs text-term-dim">
+        <Trans i18nKey="keys.note">
+          Keys are stored locally in <code className="text-phosphor">.env</code>.
+        </Trans>
       </p>
       {FIELDS.map((f) => (
         <label key={f.key} className="block">
-          <span className="mb-1 flex justify-between text-xs text-zinc-400">
+          <span className="mb-1 flex justify-between text-[11px] uppercase tracking-wide text-term-dim">
             <span>{f.label}</span>
-            <span className="text-zinc-600">
-              {data?.[f.key] ? `текущий: ${data[f.key]}` : 'не задан'}
+            <span className="text-term-border">
+              {data?.[f.key] ? t('keys.current', { mask: data[f.key] ?? '' }) : t('keys.notSet')}
             </span>
           </span>
           <input
@@ -38,13 +41,13 @@ export function ApiKeys() {
             placeholder={data?.[f.key] ?? 'sk-…'}
             value={draft[f.key] ?? ''}
             onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none"
+            className="w-full border border-term-border bg-term-panel-2 px-3 py-2 font-mono text-sm text-term-fg transition-colors focus:border-phosphor focus:outline-none"
           />
-          <span className="mt-0.5 block text-xs text-zinc-600">{f.hint}</span>
+          <span className="mt-0.5 block text-xs text-term-border">{f.hint}</span>
         </label>
       ))}
       <Button onClick={onSave} disabled={save.isPending}>
-        {save.isPending ? 'Сохраняю…' : 'Сохранить ключи'}
+        {save.isPending ? t('common.saving') : t('keys.save')}
       </Button>
     </div>
   );

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Select, Slider } from '@/shared/ui';
 import { useSaveSettings, useSettings, useTestTts, useVoices } from '@/shared/api';
 
 export function TtsSettings() {
+  const { t } = useTranslation();
   const { data } = useSettings();
   const { data: voices } = useVoices();
   const save = useSaveSettings();
@@ -19,7 +21,7 @@ export function TtsSettings() {
     setRate(parseInt(data.tts.edge_rate.replace('%', ''), 10) || 0);
   }, [data]);
 
-  if (!data) return <p className="text-sm text-zinc-500">Загрузка…</p>;
+  if (!data) return <p className="text-sm text-term-dim">{t('common.loading')}</p>;
 
   const rateStr = `${rate >= 0 ? '+' : ''}${rate}%`;
   const onSave = () => save.mutate({ tts: { engine, edge_voice: voice, edge_rate: rateStr } });
@@ -33,24 +35,24 @@ export function TtsSettings() {
   return (
     <div className="max-w-md space-y-4">
       <Select
-        label="Движок синтеза"
+        label={t('tts.engine')}
         value={engine}
         onValueChange={setEngine}
         options={[
-          { value: 'edge', label: 'Edge (нейро-голос, нужен интернет)' },
-          { value: 'pyttsx3', label: 'pyttsx3 (офлайн, системный)' },
+          { value: 'edge', label: t('tts.engineEdge') },
+          { value: 'pyttsx3', label: t('tts.enginePyttsx3') },
         ]}
       />
       {engine === 'edge' && (
         <>
           <Select
-            label="Голос"
+            label={t('tts.voice')}
             value={voice}
             onValueChange={setVoice}
             options={voiceOptions.length ? voiceOptions : [{ value: voice, label: voice }]}
           />
           <Slider
-            label="Скорость речи"
+            label={t('tts.rate')}
             valueLabel={rateStr}
             min={-50}
             max={50}
@@ -62,14 +64,14 @@ export function TtsSettings() {
       )}
       <div className="flex gap-2">
         <Button onClick={onSave} disabled={save.isPending}>
-          {save.isPending ? 'Сохраняю…' : 'Сохранить'}
+          {save.isPending ? t('common.saving') : t('common.save')}
         </Button>
         <Button variant="ghost" onClick={() => test.mutate(undefined)} disabled={test.isPending}>
-          {test.isPending ? '▸ Звучит…' : '► Тест голоса'}
+          {test.isPending ? `▸ ${t('tts.testing')}` : `► ${t('tts.test')}`}
         </Button>
       </div>
       {test.isError && (
-        <p className="text-xs text-rose-400">Не удалось воспроизвести: {String(test.error)}</p>
+        <p className="text-xs text-danger">{t('tts.testError', { error: String(test.error) })}</p>
       )}
     </div>
   );

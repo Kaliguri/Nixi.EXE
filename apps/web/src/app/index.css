@@ -1,5 +1,46 @@
 @import 'tailwindcss';
 
+/* Офлайн-шрифты (self-hosted через @fontsource, без CDN). */
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/700.css';
+@import '@fontsource/press-start-2p/400.css';
+
+/* ── Design tokens: «фосфорный терминал» ──────────────────────────────
+   Тёмная база, зелёный фосфор как «живой» акцент, коралл — в духе Claude. */
+@theme {
+  --color-term-bg: #0a0c0b;
+  --color-term-panel: #0e1210;
+  --color-term-panel-2: #121815;
+  --color-term-border: #21302a;
+  --color-term-fg: #d4dcd6;
+  --color-term-dim: #6f8a78;
+  --color-phosphor: #4ee88f;
+  --color-amber: #ffb454;
+  --color-coral: #e08768;
+  --color-danger: #ff5c57;
+  --color-cyan: #56b6c2;
+
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Segoe UI Mono', monospace;
+  --font-pixel: 'Press Start 2P', 'JetBrains Mono', monospace;
+}
+
+/* ── Темы: переопределяют цветовые токены по data-theme на <html>. ─────
+   Утилиты Tailwind ссылаются на var(--color-*), поэтому смена темы —
+   просто смена этих переменных в рантайме. Зелёная — дефолт из @theme. */
+html[data-theme='amber'] {
+  --color-term-bg: #0c0908;
+  --color-term-panel: #14100e;
+  --color-term-panel-2: #1b1512;
+  --color-term-border: #3a2c22;
+  --color-term-fg: #e8ddd2;
+  --color-term-dim: #9a8170;
+  --color-phosphor: #f0915e; /* «фосфор» становится Claude-рыжим */
+  --color-amber: #ffc06a;
+  --color-coral: #e0795a;
+  --color-cyan: #d9a066;
+}
+
 html,
 body,
 #root {
@@ -8,12 +49,227 @@ body,
 
 body {
   margin: 0;
-  background-color: #09090b; /* zinc-950 */
-  color: #e4e4e7; /* zinc-200 */
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  background-color: var(--color-term-bg);
+  color: var(--color-term-fg);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  /* Лёгкая подложка: радиальное свечение акцентом (следует за темой). */
+  background-image:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      color-mix(in srgb, var(--color-phosphor) 7%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      100% 60% at 50% 120%,
+      color-mix(in srgb, var(--color-coral) 5%, transparent),
+      transparent 60%
+    );
+  background-attachment: fixed;
+}
+
+/* ── Сканлайны: едва заметны всегда, заметнее в CRT-режиме ──────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.18) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  opacity: 0.25;
+}
+
+/* Вигнетка + бегущий блик — только в CRT-режиме. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background:
+    radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-phosphor) 4%, transparent),
+      transparent 8%
+    );
+}
+
+html.crt body::before {
+  opacity: 0.6;
+}
+html.crt body::after {
+  opacity: 1;
+  animation: crt-scan 7s linear infinite;
+}
+html.crt body {
+  animation: crt-flicker 5s steps(60) infinite;
+}
+
+@keyframes crt-scan {
+  0% {
+    background-position:
+      0 0,
+      0 -100vh;
+  }
+  100% {
+    background-position:
+      0 0,
+      0 100vh;
+  }
+}
+
+@keyframes crt-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  93% {
+    opacity: 0.96;
+  }
+  94% {
+    opacity: 1;
+  }
+  97% {
+    opacity: 0.98;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.crt body,
+  html.crt body::after {
+    animation: none;
+  }
+}
+
+/* ── Утилиты (через @utility — поддерживают варианты hover:/focus:) ──── */
+
+/* Неоновое свечение текста под цвет currentColor. */
+@utility text-glow {
+  text-shadow: 0 0 6px currentColor;
+}
+@utility text-glow-soft {
+  text-shadow: 0 0 4px color-mix(in srgb, currentColor 50%, transparent);
+}
+
+/* Мигающий блочный курсор после элемента. */
+@utility cursor-blink {
+  &::after {
+    content: '▌';
+    margin-left: 0.15em;
+    color: var(--color-phosphor);
+    animation: blink 1.1s steps(1) infinite;
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* «Хард»-тень в ретро-стиле (без размытия) + вдавливание по active. */
+@utility retro-press {
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.6);
+  transition:
+    transform 0.05s ease,
+    box-shadow 0.05s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+  &:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Глитч заголовка при наведении. */
+@utility glitch {
+  &:hover {
+    animation: glitch 0.32s steps(2) 1;
+  }
+}
+@layer utilities {
+  @keyframes glitch {
+    0% {
+      text-shadow: 0 0 6px currentColor;
+      transform: translate(0);
+    }
+    25% {
+      text-shadow:
+        -2px 0 var(--color-coral),
+        2px 0 var(--color-cyan);
+      transform: translate(1px, -1px);
+    }
+    50% {
+      text-shadow:
+        2px 0 var(--color-coral),
+        -2px 0 var(--color-cyan);
+      transform: translate(-1px, 1px);
+    }
+    100% {
+      text-shadow: 0 0 6px currentColor;
+      transform: translate(0);
+    }
+  }
+}
+
+/* ── Скроллбары в стиле терминала ──────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-term-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-term-border);
+  border: 1px solid var(--color-term-bg);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-phosphor);
+}
+
+/* ── range / slider в ретро-виде ───────────────────────────────────── */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--color-term-panel-2);
+  border: 1px solid var(--color-term-border);
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 16px;
+  background: var(--color-phosphor);
+  box-shadow: 0 0 6px var(--color-phosphor);
+  border: none;
+  cursor: pointer;
+}
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 16px;
+  background: var(--color-phosphor);
+  box-shadow: 0 0 6px var(--color-phosphor);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+::selection {
+  background: var(--color-phosphor);
+  color: var(--color-term-bg);
 }

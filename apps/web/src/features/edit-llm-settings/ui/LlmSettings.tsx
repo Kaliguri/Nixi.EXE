@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Select } from '@/shared/ui';
 import { useSaveSettings, useSettings } from '@/shared/api';
 
 export function LlmSettings() {
+  const { t } = useTranslation();
   const { data } = useSettings();
   const save = useSaveSettings();
   const [defaultModel, setDefaultModel] = useState('');
@@ -14,7 +16,7 @@ export function LlmSettings() {
     setModels(Object.fromEntries(Object.entries(data.models).map(([k, v]) => [k, v.model ?? ''])));
   }, [data]);
 
-  if (!data) return <p className="text-sm text-zinc-500">Загрузка…</p>;
+  if (!data) return <p className="text-sm text-term-dim">{t('common.loading')}</p>;
 
   const keys = Object.keys(data.models);
 
@@ -27,7 +29,7 @@ export function LlmSettings() {
   return (
     <div className="max-w-md space-y-4">
       <Select
-        label="Активная нейросеть по умолчанию"
+        label={t('llm.defaultModel')}
         value={defaultModel}
         onValueChange={setDefaultModel}
         options={keys.map((k) => ({
@@ -37,16 +39,18 @@ export function LlmSettings() {
       />
       {keys.map((k) => (
         <label key={k} className="block">
-          <span className="mb-1 block text-xs text-zinc-400">Модель {k.toUpperCase()}</span>
+          <span className="mb-1 block text-[11px] uppercase tracking-wide text-term-dim">
+            {t('llm.modelFor', { name: k.toUpperCase() })}
+          </span>
           <input
             value={models[k] ?? ''}
             onChange={(e) => setModels((m) => ({ ...m, [k]: e.target.value }))}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none"
+            className="w-full border border-term-border bg-term-panel-2 px-3 py-2 font-mono text-sm text-term-fg transition-colors focus:border-phosphor focus:outline-none"
           />
         </label>
       ))}
       <Button onClick={onSave} disabled={save.isPending}>
-        {save.isPending ? 'Сохраняю…' : 'Сохранить'}
+        {save.isPending ? t('common.saving') : t('common.save')}
       </Button>
     </div>
   );

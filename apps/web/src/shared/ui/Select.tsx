@@ -12,11 +12,15 @@ type Props = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> & {
 export function Select({ label, options, onValueChange, className, ...rest }: Props) {
   return (
     <label className="block">
-      {label && <span className="mb-1 block text-xs text-zinc-400">{label}</span>}
+      {label && (
+        <span className="mb-1 block text-[11px] uppercase tracking-wide text-term-dim">
+          {label}
+        </span>
+      )}
       <select
         className={cn(
-          'w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100',
-          'focus:border-indigo-500 focus:outline-none',
+          'w-full border border-term-border bg-term-panel-2 px-3 py-2 font-mono text-sm text-term-fg',
+          'transition-colors focus:border-phosphor focus:outline-none focus:text-glow-soft',
           className,
         )}
         onChange={(e) => onValueChange?.(e.target.value)}

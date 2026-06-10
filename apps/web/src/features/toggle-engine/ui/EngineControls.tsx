@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/shared/ui';
 import { useEngineAction } from '@/shared/api';
 import { useEngineStore } from '@/shared/ws/useEngineSocket';
 
 export function EngineControls() {
+  const { t } = useTranslation();
   const state = useEngineStore((s) => s.state);
   const action = useEngineAction();
   const running = !['stopped', 'error'].includes(state);
@@ -12,7 +14,7 @@ export function EngineControls() {
     <div className="flex gap-2">
       {running ? (
         <Button variant="danger" disabled={action.isPending} onClick={() => action.mutate('stop')}>
-          ◼ Стоп
+          ◼ {t('engine.stop')}
         </Button>
       ) : (
         <Button
@@ -20,17 +22,17 @@ export function EngineControls() {
           disabled={action.isPending}
           onClick={() => action.mutate('start')}
         >
-          ▶ Старт
+          ▶ {t('engine.start')}
         </Button>
       )}
       {running &&
         (paused ? (
           <Button variant="ghost" onClick={() => action.mutate('resume')}>
-            ▸ Продолжить
+            ▸ {t('engine.resume')}
           </Button>
         ) : (
           <Button variant="ghost" onClick={() => action.mutate('pause')}>
-            ⏸ Пауза
+            ⏸ {t('engine.pause')}
           </Button>
         ))}
     </div>

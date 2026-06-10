@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Select, Slider, VUMeter } from '@/shared/ui';
 import { useDevices, useSaveSettings, useSettings, type Device } from '@/shared/api';
 import { useEngineStore } from '@/shared/ws/useEngineSocket';
 import { useNow } from '@/shared/lib/useNow';
 import { useDebouncedCallback } from '@/shared/lib/useDebouncedCallback';
 
-const DEFAULT_OPT = { value: '', label: 'Системное по умолчанию' };
-
-function deviceOptions(list: Device[] | undefined) {
-  return [DEFAULT_OPT, ...(list ?? []).map((d) => ({ value: String(d.id), label: d.name }))];
+function deviceOptions(list: Device[] | undefined, defaultLabel: string) {
+  return [
+    { value: '', label: defaultLabel },
+    ...(list ?? []).map((d) => ({ value: String(d.id), label: d.name })),
+  ];
 }
 
 export function AudioPanel() {
+  const { t } = useTranslation();
   const { data: settings } = useSettings();
   const { data: devices, refetch, isFetching } = useDevices();
   const save = useSaveSettings();
@@ -39,7 +42,7 @@ export function AudioPanel() {
     save.mutate({ audio: { output_gain: v / 100 } }),
   );
 
-  if (!settings) return <Card title="Аудио">Загрузка…</Card>;
+  if (!settings) return <Card title={t('audio.title')}>{t('common.loading')}</Card>;
 
   const a = settings.audio;
   const inActive = now - inputTs < 400;
@@ -47,10 +50,10 @@ export function AudioPanel() {
 
   return (
     <Card
-      title="Аудио"
+      title={t('audio.title')}
       right={
-        <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => refetch()}>
-          {isFetching ? '↻ …' : '↻ Обновить'}
+        <Button variant="ghost" className="px-2 py-1" onClick={() => refetch()}>
+          ↻ {isFetching ? '…' : t('audio.refresh')}
         </Button>
       }
     >
@@ -58,16 +61,16 @@ export function AudioPanel() {
         {/* Вход */}
         <div className="space-y-2">
           <Select
-            label="Микрофон (вход)"
+            label={t('audio.micInput')}
             value={a.input_device === null ? '' : String(a.input_device)}
-            options={deviceOptions(devices?.input)}
+            options={deviceOptions(devices?.input, t('audio.systemDefault'))}
             onValueChange={(v) =>
               save.mutate({ audio: { input_device: v === '' ? null : Number(v) } })
             }
           />
           <VUMeter db={inActive ? inputDb : -120} active={inActive} />
           <Slider
-            label="Усиление входа"
+            label={t('audio.inputGain')}
             valueLabel={`${inGain}%`}
             min={0}
             max={200}
@@ -83,16 +86,16 @@ export function AudioPanel() {
         {/* Выход */}
         <div className="space-y-2">
           <Select
-            label="Колонки / наушники (выход)"
+            label={t('audio.output')}
             value={a.output_device === null ? '' : String(a.output_device)}
-            options={deviceOptions(devices?.output)}
+            options={deviceOptions(devices?.output, t('audio.systemDefault'))}
             onValueChange={(v) =>
               save.mutate({ audio: { output_device: v === '' ? null : Number(v) } })
             }
           />
           <VUMeter db={outActive ? outputDb : -120} active={outActive} />
           <Slider
-            label="Громкость вывода"
+            label={t('audio.outputVolume')}
             valueLabel={`${outGain}%`}
             min={0}
             max={200}

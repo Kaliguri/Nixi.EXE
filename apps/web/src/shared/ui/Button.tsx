@@ -3,11 +3,12 @@ import { cn } from '@/shared/lib/cn';
 
 type Variant = 'primary' | 'ghost' | 'danger' | 'success';
 
+// Ретро-кнопки: квадратные, моноширинные, с «хард»-тенью и вдавливанием.
 const variants: Record<Variant, string> = {
-  primary: 'bg-indigo-600 hover:bg-indigo-500 text-white',
-  success: 'bg-emerald-600 hover:bg-emerald-500 text-white',
-  danger: 'bg-rose-600 hover:bg-rose-500 text-white',
-  ghost: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700',
+  primary: 'bg-coral/15 text-coral border-coral/60 hover:bg-coral/25 hover:text-glow',
+  success: 'bg-phosphor/15 text-phosphor border-phosphor/60 hover:bg-phosphor/25 hover:text-glow',
+  danger: 'bg-danger/15 text-danger border-danger/60 hover:bg-danger/25 hover:text-glow',
+  ghost: 'bg-term-panel text-term-dim border-term-border hover:text-term-fg hover:border-term-dim',
 };
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant };
@@ -16,8 +17,9 @@ export function Button({ variant = 'primary', className, ...rest }: Props) {
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium',
-        'transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+        'retro-press inline-flex items-center justify-center gap-2 border px-4 py-2',
+        'text-xs font-medium uppercase tracking-wider',
+        'disabled:cursor-not-allowed disabled:opacity-40',
         variants[variant],
         className,
       )}
