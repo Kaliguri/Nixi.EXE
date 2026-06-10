@@ -6,9 +6,19 @@
 from __future__ import annotations
 
 import asyncio
+import mimetypes
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+# На Windows StaticFiles берёт MIME-типы из реестра, где .js нередко прописан как
+# text/plain — тогда браузер отказывается исполнять ES-модули фронта и панель
+# остаётся пустой. Принудительно задаём правильные типы для всего процесса.
+mimetypes.add_type("application/javascript", ".js")
+mimetypes.add_type("application/javascript", ".mjs")
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("application/wasm", ".wasm")
+mimetypes.add_type("image/svg+xml", ".svg")
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
