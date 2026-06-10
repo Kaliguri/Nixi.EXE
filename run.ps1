@@ -1,4 +1,4 @@
-# Запуск.  .\run.ps1 (текст)  |  -voice (голос)  |  -ui (веб-панель)  |  -tray (иконка в трее)
+﻿# Запуск.  .\run.ps1 (текст)  |  -voice (голос)  |  -ui (веб-панель)  |  -tray (иконка в трее)
 param([switch]$voice, [switch]$ui, [switch]$tray)
 
 $env:PYTHONUTF8 = "1"
