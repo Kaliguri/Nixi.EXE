@@ -6,6 +6,7 @@ import { useKeys, useSaveKeys } from '@/shared/api';
 const FIELDS = [
   { key: 'ANTHROPIC_API_KEY', label: 'Anthropic (Claude)', hint: 'console.anthropic.com' },
   { key: 'OPENAI_API_KEY', label: 'OpenAI (GPT)', hint: 'platform.openai.com/api-keys' },
+  { key: 'GEMINI_API_KEY', label: 'Google (Gemini)', hint: 'aistudio.google.com/apikey' },
 ] as const;
 
 export function ApiKeys() {

@@ -76,6 +76,7 @@ export type Settings = z.infer<typeof settingsSchema>;
 export const keysSchema = z.object({
   ANTHROPIC_API_KEY: z.string().nullable(),
   OPENAI_API_KEY: z.string().nullable(),
+  GEMINI_API_KEY: z.string().nullable(),
 });
 export type Keys = z.infer<typeof keysSchema>;
 

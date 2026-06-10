@@ -60,6 +60,7 @@ class KeysUpdate(BaseModel):
     """Новые значения ключей. Пустая строка/None — оставить без изменений."""
     ANTHROPIC_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
 
 
 class TtsTestRequest(BaseModel):

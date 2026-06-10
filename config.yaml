@@ -1,6 +1,6 @@
 assistant:
   name: "Гайда"            # имя ассистента (в будущем — wake word)
-  default_model: claude    # с каким LLM работаем по умолчанию: claude | gpt
+  default_model: gemini    # с каким LLM работаем по умолчанию: claude | gpt | gemini
   language: ru
 
 # Две модели, переключаемые голосом/текстом.
@@ -15,6 +15,10 @@ models:
     provider: openai
     model: gpt-4o-mini             # дёшево; можно gpt-4o
     triggers: ["гпт", "чат гпт", "gpt", "джипити"]
+  gemini:
+    provider: google
+    model: gemini-2.5-flash-lite   # быстрая и дешёвая; есть Free Tier
+    triggers: ["джемини", "гемини", "gemini", "джем", "гугл"]
 
 # Распознавание речи (нужен голосовой режим)
 stt:
@@ -27,7 +31,7 @@ stt:
 # Синтез речи
 tts:
   engine: edge             # edge (нейро-голос Microsoft, нужен интернет) | pyttsx3 (офлайн SAPI)
-  edge_voice: "ru-RU-SvetlanaNeural"   # или ru-RU-DmitryNeural (муж.)
+  edge_voice: "ru-RU-DmitryNeural"     # или ru-RU-DmitryNeural (муж.)
   edge_rate: "+0%"         # скорость: "+10%", "-10%" и т.п.
   rate: 180                # скорость речи (для pyttsx3)
   voice: ""                # id голоса для pyttsx3; пусто = системный по умолчанию
@@ -52,8 +56,8 @@ trigger:
 # Аудио-устройства и громкость (управляются из веб-UI).
 # device = null означает «системное по умолчанию». id берётся из GET /api/devices.
 audio:
-  input_device:            # id микрофона (null = по умолчанию)
-  output_device:           # id колонок/наушников (null = по умолчанию)
+  input_device: 1          # id микрофона (null = по умолчанию)
+  output_device: 9         # id колонок/наушников (null = по умолчанию)
   input_gain: 1.0          # усиление входа 0..2 (1.0 = без изменений)
   output_gain: 1.0         # громкость вывода 0..2
 

@@ -121,6 +121,7 @@ def get_keys() -> dict:
     return {
         "ANTHROPIC_API_KEY": mask_key(env.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")),
         "OPENAI_API_KEY": mask_key(env.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")),
+        "GEMINI_API_KEY": mask_key(env.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")),
     }
 
 

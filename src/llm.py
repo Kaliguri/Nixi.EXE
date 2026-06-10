@@ -1,4 +1,4 @@
-"""LLM-агенты (Claude / GPT) и роутер выбора модели."""
+"""LLM-агенты (Claude / GPT / Gemini) и роутер выбора модели."""
 import os
 from typing import List, Dict
 
@@ -50,7 +50,34 @@ class OpenAIAgent:
         return (resp.choices[0].message.content or "").strip()
 
 
-_PROVIDERS = {"anthropic": ClaudeAgent, "openai": OpenAIAgent}
+class GeminiAgent:
+    """Google Gemini через OpenAI-совместимый эндпоинт.
+
+    Переиспользуем уже установленный пакет openai с другим base_url —
+    отдельный SDK ставить не нужно.
+    """
+
+    BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+
+    def __init__(self, assistant_name: str, model: str):
+        from openai import OpenAI
+
+        key = os.getenv("GEMINI_API_KEY")
+        if not key:
+            raise RuntimeError("GEMINI_API_KEY не задан в .env")
+        self.client = OpenAI(api_key=key, base_url=self.BASE_URL)
+        self.model = model
+        self.system = SYSTEM_PROMPT.format(name=assistant_name)
+
+    def chat(self, history: List[Dict]) -> str:
+        messages = [{"role": "system", "content": self.system}] + history
+        resp = self.client.chat.completions.create(
+            model=self.model, max_tokens=600, messages=messages
+        )
+        return (resp.choices[0].message.content or "").strip()
+
+
+_PROVIDERS = {"anthropic": ClaudeAgent, "openai": OpenAIAgent, "google": GeminiAgent}
 
 
 class Router:
