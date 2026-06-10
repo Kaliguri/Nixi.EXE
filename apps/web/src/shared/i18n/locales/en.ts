@@ -60,6 +60,7 @@ export const en = {
     theme: 'Color theme',
     themeGreen: 'Phosphor (green)',
     themeAmber: 'Amber (Claude-style)',
+    themePurple: 'Purple (Nixi)',
     crt: 'CRT mode',
     crtHint: 'Scanlines, vignette, flicker and glow — pure retro.',
   },

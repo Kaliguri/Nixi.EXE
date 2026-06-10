@@ -62,6 +62,7 @@ export const ru: Translations = {
     theme: 'Цветовая тема',
     themeGreen: 'Фосфор (зелёный)',
     themeAmber: 'Янтарь (в духе Claude)',
+    themePurple: 'Пурпур (Никси)',
     crt: 'CRT-режим',
     crtHint: 'Сканлайны, вигнетка, фликер и свечение — полный ретро.',
   },

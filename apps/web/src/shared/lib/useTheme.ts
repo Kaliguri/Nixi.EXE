@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type ThemeId = 'green' | 'amber';
+export type ThemeId = 'green' | 'amber' | 'purple';
 
 // Доступные цветовые темы (реколор токенов). swatch — цвет акцента для превью.
 export const THEMES: { id: ThemeId; swatch: string }[] = [
   { id: 'green', swatch: '#4ee88f' },
   { id: 'amber', swatch: '#f0915e' },
+  { id: 'purple', swatch: '#b46cff' },
 ];
 
 type ThemeState = { theme: ThemeId; setTheme: (t: ThemeId) => void };

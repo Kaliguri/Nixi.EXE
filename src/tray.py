@@ -198,9 +198,9 @@ class TrayApp:
         self.cfg = load_config()
         self.server = ServerController()
         self.icon = pystray.Icon(
-            "home_ai_assistant",
+            "nixi_exe",
             icon=_icon_for("stopped"),
-            title="Домашний ассистент",
+            title="Nixi.EXE — Никси",
             menu=self._build_menu(),
         )
         self._stop_watcher = threading.Event()

@@ -78,7 +78,7 @@ def create_app() -> FastAPI:
     bus = EventBus()
     engine = AssistantEngine(cfg, on_event=bus.publish)
 
-    app = FastAPI(title="Home AI Voice Assistant — Control Panel", lifespan=lifespan)
+    app = FastAPI(title="Nixi.EXE — Home AI Assistant Control Panel", lifespan=lifespan)
     app.state.cfg = cfg
     app.state.bus = bus
     app.state.engine = engine

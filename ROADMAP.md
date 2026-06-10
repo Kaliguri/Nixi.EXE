@@ -21,7 +21,7 @@
 
 - [x] **Иконка в системном трее Windows** (`src/tray.py`, pystray + Pillow). Двойной ЛКМ —
   открыть панель в браузере; ПКМ — запуск/стоп/перезапуск сервера, тумблер автозапуска с
-  Windows (реестр `HKCU\...\Run`), выход. Цвет иконки = статус сервера. Ярлык `Гайда.lnk`
+  Windows (реестр `HKCU\...\Run`), выход. Цвет иконки = статус сервера. Ярлык `Nixi.lnk`
   генерится `install-tray.ps1` (двойной клик + закрепление на панели задач). Поведение
   старта — секция `tray` в `config.yaml` (`start_server`, `open_browser_on_launch`).
 - [x] **Standalone CPU-`.exe`** (PyInstaller) — раздача без установленного Python. `build-exe.ps1`

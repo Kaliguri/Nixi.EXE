@@ -4,8 +4,9 @@ import { cn } from '@/shared/lib/cn';
 type Variant = 'primary' | 'ghost' | 'danger' | 'success';
 
 // Ретро-кнопки: квадратные, моноширинные, с «хард»-тенью и вдавливанием.
+// primary использует акцент темы (phosphor), поэтому следует за зелёной/янтарной/пурпурной.
 const variants: Record<Variant, string> = {
-  primary: 'bg-coral/15 text-coral border-coral/60 hover:bg-coral/25 hover:text-glow',
+  primary: 'bg-phosphor/15 text-phosphor border-phosphor/60 hover:bg-phosphor/25 hover:text-glow',
   success: 'bg-phosphor/15 text-phosphor border-phosphor/60 hover:bg-phosphor/25 hover:text-glow',
   danger: 'bg-danger/15 text-danger border-danger/60 hover:bg-danger/25 hover:text-glow',
   ghost: 'bg-term-panel text-term-dim border-term-border hover:text-term-fg hover:border-term-dim',

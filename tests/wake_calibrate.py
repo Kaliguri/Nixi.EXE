@@ -48,8 +48,8 @@ def synth_mode(cfg: dict, model: Model) -> None:
         rec.AcceptWaveform(to_pcm16k(data, sr))
         return json.loads(rec.FinalResult()).get("text", "")
 
-    print("Как Vosk слышит фразу активации (СИНТЕЗ — прокси, не твой голос):\n")
-    for ph in ["арс меджика", "арс меджика арс меджика", "ars magica", "арс магика"]:
+    print("Как Vosk слышит имя активации (СИНТЕЗ — прокси, не твой голос):\n")
+    for ph in ["никси", "никси никси", "nixi", "ники"]:
         print(f"  сказано {ph!r:32} -> Vosk: {hear(ph)!r}")
     print("\nДля точной настройки запусти ЖИВОЙ режим:  ... wake_calibrate live")
 

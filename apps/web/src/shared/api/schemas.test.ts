@@ -3,7 +3,7 @@ import { settingsSchema, wsEventSchema } from './schemas';
 
 const validSettings = {
   audio: { input_device: null, output_device: 3, input_gain: 1, output_gain: 1.5 },
-  assistant: { name: 'Гайда', default_model: 'claude', language: 'ru' },
+  assistant: { name: 'Никси', default_model: 'claude', language: 'ru' },
   models: { claude: { provider: 'anthropic', model: 'claude-sonnet-4-6', triggers: ['клод'] } },
   tts: { engine: 'edge', edge_voice: 'ru-RU-SvetlanaNeural', edge_rate: '+0%' },
   trigger: {
@@ -11,7 +11,7 @@ const validSettings = {
     silence_seconds: 1.2,
     max_seconds: 15,
     beep: true,
-    wakeword: { phrases: ['арс меджика'], fuzzy: 0.7 },
+    wakeword: { phrases: ['никси'], fuzzy: 0.7 },
   },
   skills: { enabled: true },
 };

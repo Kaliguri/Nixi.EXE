@@ -1,4 +1,4 @@
-﻿# Создаёт ярлык "Гайда.lnk" для запуска ассистента из трея (двойной клик / закрепление
+﻿# Создаёт ярлык "Nixi.lnk" для запуска ассистента Никси из трея (двойной клик / закрепление
 # на панели задач), генерирует иконку и подсказывает по автозапуску.
 #   .\install-tray.ps1
 $ErrorActionPreference = "Stop"
@@ -28,14 +28,14 @@ if (-not (Test-Path $icoPath)) {
     $icoPath = $pyw
 }
 
-$lnkPath = Join-Path $root "Гайда.lnk"
+$lnkPath = Join-Path $root "Nixi.lnk"
 $sh = New-Object -ComObject WScript.Shell
 $lnk = $sh.CreateShortcut($lnkPath)
 $lnk.TargetPath = $pyw
 $lnk.Arguments = '"' + (Join-Path $root "src\tray.py") + '"'
 $lnk.WorkingDirectory = $root
 $lnk.IconLocation = $icoPath
-$lnk.Description = "Домашний голосовой ассистент — иконка в трее"
+$lnk.Description = "Nixi.EXE — домашний голосовой ассистент Никси (иконка в трее)"
 $lnk.Save()
 
 Write-Host "Готово. Ярлык: $lnkPath" -ForegroundColor Green

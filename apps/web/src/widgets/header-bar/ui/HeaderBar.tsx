@@ -2,13 +2,14 @@ import { useTranslation } from 'react-i18next';
 import { StatusBadge, CrtToggle } from '@/shared/ui';
 import { LanguageSwitcher } from '@/shared/i18n';
 import { cn } from '@/shared/lib/cn';
-import { useSettings } from '@/shared/api';
 import { useEngineStore } from '@/shared/ws/useEngineSocket';
 import { EngineControls } from '@/features/toggle-engine';
 
+// Бренд продукта в шапке — фиксированный на любом языке (имя бота «Никси» живёт отдельно).
+const BRAND = 'Nixi.EXE';
+
 export function HeaderBar() {
   const { t } = useTranslation();
-  const { data: settings } = useSettings();
   const state = useEngineStore((s) => s.state);
   const connected = useEngineStore((s) => s.connected);
 
@@ -25,7 +26,7 @@ export function HeaderBar() {
           title={connected ? t('header.online') : t('header.offline')}
         />
         <h1 className="glitch cursor-blink font-pixel text-sm uppercase text-phosphor text-glow">
-          {settings?.assistant.name || t('header.assistant')}
+          {BRAND}
         </h1>
         <StatusBadge state={state} />
       </div>

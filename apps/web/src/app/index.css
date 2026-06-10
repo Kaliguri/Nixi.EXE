@@ -41,6 +41,20 @@ html[data-theme='amber'] {
   --color-cyan: #d9a066;
 }
 
+/* Пурпур (Никси / Nixi.EXE): неоново-фиолетовый фосфор на тёмно-сливовой базе. */
+html[data-theme='purple'] {
+  --color-term-bg: #0a070f;
+  --color-term-panel: #110b18;
+  --color-term-panel-2: #181020;
+  --color-term-border: #2e2240;
+  --color-term-fg: #e2d7f0;
+  --color-term-dim: #8b7aa8;
+  --color-phosphor: #b46cff; /* «фосфор» становится неоново-пурпурным */
+  --color-amber: #d9a8ff;
+  --color-coral: #c77dff; /* акцент кнопок следует за темой */
+  --color-cyan: #7aa2f7;
+}
+
 html,
 body,
 #root {

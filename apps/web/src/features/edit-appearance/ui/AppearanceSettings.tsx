@@ -4,9 +4,13 @@ import { useTheme, THEMES, type ThemeId } from '@/shared/lib/useTheme';
 import { useCrt } from '@/shared/lib/useCrt';
 import { Toggle } from '@/shared/ui';
 
-const themeLabelKey: Record<ThemeId, 'appearance.themeGreen' | 'appearance.themeAmber'> = {
+const themeLabelKey: Record<
+  ThemeId,
+  'appearance.themeGreen' | 'appearance.themeAmber' | 'appearance.themePurple'
+> = {
   green: 'appearance.themeGreen',
   amber: 'appearance.themeAmber',
+  purple: 'appearance.themePurple',
 };
 
 export function AppearanceSettings() {
@@ -22,7 +26,7 @@ export function AppearanceSettings() {
         <p className="mb-2 text-[11px] uppercase tracking-wide text-term-dim">
           {t('appearance.theme')}
         </p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {THEMES.map((th) => {
             const active = theme === th.id;
             return (

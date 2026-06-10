@@ -15,7 +15,7 @@ from src.voice import _add_nvidia_dll_dirs
 _add_nvidia_dll_dirs()
 from faster_whisper import WhisperModel  # noqa: E402 — после добавления путей к CUDA-DLL
 
-PHRASE = "Привет! Я Гайда, голосовой ассистент. Включи музыку."
+PHRASE = "Привет! Я Никси, голосовой ассистент. Включи музыку."
 
 
 def main() -> None:
