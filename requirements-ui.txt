@@ -4,3 +4,5 @@ fastapi>=0.115
 uvicorn[standard]>=0.30
 websockets>=12.0
 ruamel.yaml>=0.18      # round-trip запись config.yaml с сохранением комментариев
+pystray>=0.19          # иконка в системном трее Windows
+pillow>=10.0           # генерация иконок статуса для трея

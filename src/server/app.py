@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -18,7 +19,12 @@ from src.engine import AssistantEngine
 from src.server.api import router as api_router
 from src.server.events import EventBus
 
-DIST_DIR = ROOT / "apps" / "web" / "dist"
+# Собранный фронт: в обычном запуске — apps/web/dist; в PyInstaller-exe он упакован
+# в бандл (_MEIPASS/web_dist), а не лежит рядом с exe.
+if getattr(sys, "frozen", False):
+    DIST_DIR = Path(sys._MEIPASS) / "web_dist"  # type: ignore[attr-defined]
+else:
+    DIST_DIR = ROOT / "apps" / "web" / "dist"
 
 
 @asynccontextmanager
@@ -78,13 +84,10 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
-
-
 def main() -> None:
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(create_app(), host="127.0.0.1", port=8000)
 
 
 if __name__ == "__main__":

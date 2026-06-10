@@ -18,6 +18,16 @@ models/
 .cache/
 audio_cache/
 
+# Трей: ярлык и иконка генерятся install-tray.ps1 под конкретную машину + логи сервера
+/*.lnk
+assets/tray/
+logs/
+
+# Сборка exe (PyInstaller)
+.venv-build/
+/build/
+*.exe
+
 # OS / IDE
 .DS_Store
 Thumbs.db

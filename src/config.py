@@ -2,12 +2,19 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 import yaml
 from dotenv import load_dotenv
 
-ROOT = Path(__file__).resolve().parent.parent
+# В собранном PyInstaller-exe изменяемые данные (config.yaml, .env, models/, logs/)
+# лежат РЯДОМ с exe, а не во временной распаковке _MEIPASS — иначе правки конфига
+# и модели не находились бы. В обычном запуске это корень проекта.
+if getattr(sys, "frozen", False):
+    ROOT = Path(sys.executable).resolve().parent
+else:
+    ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config.yaml"
 ENV_PATH = ROOT / ".env"
 

@@ -59,3 +59,8 @@ audio:
 
 skills:
   enabled: true
+
+# Иконка в системном трее Windows (src/tray.py).
+tray:
+  start_server: true            # поднимать веб-сервер вместе с треем
+  open_browser_on_launch: false # сразу открыть панель в браузере при старте трея
