@@ -23,6 +23,33 @@ mimetypes.add_type("image/svg+xml", ".svg")
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
+
+# StaticFiles определяет Content-Type через mimetypes, а тот на Windows читает
+# реестр, где .js часто прописан как text/plain — браузер тогда отказывается
+# исполнять ES-модули и панель остаётся пустой. add_type выше это обычно чинит,
+# но порядок инициализации mimetypes хрупкий; поэтому здесь жёстко перебиваем
+# тип по расширению, не полагаясь на ОС вообще.
+_FORCE_TYPES = {
+    ".js": "application/javascript",
+    ".mjs": "application/javascript",
+    ".css": "text/css",
+    ".wasm": "application/wasm",
+    ".svg": "image/svg+xml",
+    ".json": "application/json",
+}
+
+
+class TypedStaticFiles(StaticFiles):
+    def file_response(self, full_path, *args, **kwargs) -> Response:  # type: ignore[override]
+        response = super().file_response(full_path, *args, **kwargs)
+        forced = _FORCE_TYPES.get(Path(full_path).suffix.lower())
+        if forced:
+            response.headers["content-type"] = f"{forced}; charset=utf-8"
+        # В деве запрещаем кэш: иначе один раз отклонённый по MIME модуль
+        # «залипает» в кэше браузера и не перезапрашивается даже после фикса.
+        response.headers["cache-control"] = "no-store"
+        return response
 
 from src.config import ROOT, load_config
 from src.engine import AssistantEngine
@@ -81,7 +108,7 @@ def create_app() -> FastAPI:
 
     # Прод: раздаём собранный фронт. В деве (dist нет) фронт поднимает Vite.
     if DIST_DIR.is_dir():
-        app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="static")
+        app.mount("/", TypedStaticFiles(directory=str(DIST_DIR), html=True), name="static")
     else:
         @app.get("/")
         def _no_build() -> dict:
